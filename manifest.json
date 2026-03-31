@@ -1,0 +1,14 @@
+{
+  "manifest_version": 3,
+  "name": "Bot AutoFill HSSK Hà Nội",
+  "version": "1.0",
+  "description": "Bảng điều khiển tự động tìm kiếm và điền thông tin nhân khẩu trên hệ thống HSSK",
+  "author": "Bạn",
+  "content_scripts": [
+    {
+      "matches": ["https://hssk.hanoi.gov.vn/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}
