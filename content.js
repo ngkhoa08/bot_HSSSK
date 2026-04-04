@@ -2,29 +2,25 @@
     'use strict';
 
     // --- BẢN VÁ LỖI QUAN TRỌNG: LÀM SẠCH BỘ NHỚ KHI CHẠY LẠI BOT ---
-    // Diệt vòng lặp chạy ngầm cũ (nếu có) để tránh loạn bot
     if (window.hsskBotInterval) {
         clearInterval(window.hsskBotInterval);
     }
-    // Tiêu diệt khung Bot cũ trên màn hình để ép nó vẽ lại và gắn lại nút bấm
     const oldPanel = document.getElementById('hssk-bot-panel');
     if (oldPanel) {
         oldPanel.remove();
     }
     // ---------------------------------------------------------------
 
-    // Biến toàn cục lưu trữ trạng thái Chuẩn Hóa
+    // Biến toàn cục lưu trữ trạng thái
     window.hsskBotQueue = [];
     window.totalChuanHoa = 0; 
     window.currentSearchId = null;
     
-    // Biến toàn cục lưu trữ trạng thái Thêm Mới
     window.themMoiQueue = [];
     window.totalThemMoi = 0;
     window.isThemMoiRunning = false;
     window.currentThemMoiId = null; 
 
-    // Biến toàn cục MỚI: Lưu trữ trạng thái Ghép Hộ
     window.ghephoQueue = [];
     window.totalGhephoFamilies = 0;
     window.isGhephoRunning = false;
@@ -34,7 +30,6 @@
     window.lastCollectedMedicalId = ""; 
     window.isCompactMode = true;
 
-    // --- FIX LỖI 1: KHAI BÁO HÀM TÍNH TUỔI Ở ĐẦU ĐỂ KHÔNG BỊ LỖI CHƯA ĐỊNH NGHĨA ---
     function calculateAge(dobString) {
         if (!dobString) return null;
         const parts = dobString.split('/');
@@ -47,7 +42,6 @@
         return age;
     }
 
-    // Lưu lại text người dùng đã nhập
     window.textChuanHoa = window.textChuanHoa || "";
     window.textGhepHo = window.textGhepHo || "";
     window.textThemMoi = window.textThemMoi || "";
@@ -55,7 +49,6 @@
     window.textDienNhanhThon = window.textDienNhanhThon || "hoa vôi";
     window.currentTab = window.currentTab || "chuanhoa";
 
-    // Hàm tiện ích chuyển tab tránh lỗi Angular
     async function switchToTab(tabText, hashFallback) {
         let tabFound = false;
         const tabs = document.querySelectorAll('.label-tab span');
@@ -143,7 +136,10 @@
                         
                         <button id="btn_auto_fill_transfer" style="width: 100%; background: #fd7e14; color: white; border: none; padding: 8px; font-weight: bold; cursor: pointer; border-radius: 4px; font-size: 12px; display: none; margin-top: 6px; box-shadow: 0 0 8px rgba(253,126,20,0.5);">🏡 TỰ ĐIỀN CHUYỂN ĐỊA BÀN</button>
                         
-                        <button id="btn_add_cccd_chuanhoa" title="Chưa có mã y tế nào được lưu" style="width: 100%; background: #e83e8c; color: white; border: none; padding: 8px; font-weight: bold; cursor: pointer; border-radius: 4px; font-size: 12px; display: block; margin-top: 6px; box-shadow: 0 0 8px rgba(232,62,140,0.5);">🏷️ SỬA BẰNG MÃ Y TẾ</button>
+                        <div style="display: flex; gap: 6px; margin-top: 6px;">
+                            <button id="btn_add_cccd_chuanhoa" title="Chưa có mã y tế nào được lưu" style="flex: 1; background: #e83e8c; color: white; border: none; padding: 8px; font-weight: bold; cursor: pointer; border-radius: 4px; font-size: 12px; display: block; box-shadow: 0 0 8px rgba(232,62,140,0.5);">🏷️ SỬA BẰNG MÃ Y TẾ</button>
+                            <button id="btn_hd_sua_ma_chuanhoa" title="Xem hướng dẫn chức năng này" style="background: #ffc107; color: #333; border: 1px solid #ffb300; padding: 0 12px; font-weight: bold; cursor: pointer; border-radius: 4px; font-size: 14px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">❓</button>
+                        </div>
                     </div>
                 </div>
 
@@ -172,7 +168,6 @@
 
                 <!-- TAB 3: THÊM MỚI HÀNG LOẠT -->
                 <div id="content_themmoi" style="display: none;">
-                    <!-- HƯỚNG DẪN NẠP DỮ LIỆU THÊM MỚI -->
                     <div style="margin-bottom: 10px;">
                         <button id="btn_huong_dan_themmoi" style="width: 100%; background: #ffc107; color: #333; border: 1px solid #ffb300; padding: 8px; font-weight: bold; border-radius: 4px; font-size: 12px; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">ℹ️ HƯỚNG DẪN COPY EXCEL (THÊM MỚI)</button>
                     </div>
@@ -196,7 +191,10 @@
                         <button id="btn_approve_themmoi" style="width: 100%; background: #0056b3; color: white; border: none; padding: 8px; font-weight: bold; cursor: pointer; border-radius: 4px; font-size: 12px; display: none;">✅ DUYỆT & LƯU</button>
                         <button id="btn_skip_themmoi" style="width: 100%; background: #dc3545; color: white; border: none; padding: 8px; font-weight: bold; cursor: pointer; border-radius: 4px; font-size: 12px; display: none;">⏭️ BỎ QUA NGƯỜI NÀY</button>
                         
-                        <button id="btn_add_cccd_themmoi" title="Chưa có mã y tế nào được lưu" style="width: 100%; background: #e83e8c; color: white; border: none; padding: 8px; font-weight: bold; cursor: pointer; border-radius: 4px; font-size: 12px; display: block; box-shadow: 0 0 8px rgba(232,62,140,0.5); margin-top: 5px;">🏷️ SỬA BẰNG MÃ Y TẾ</button>
+                        <div style="display: flex; gap: 6px; margin-top: 5px;">
+                            <button id="btn_add_cccd_themmoi" title="Chưa có mã y tế nào được lưu" style="flex: 1; background: #e83e8c; color: white; border: none; padding: 8px; font-weight: bold; cursor: pointer; border-radius: 4px; font-size: 12px; display: block; box-shadow: 0 0 8px rgba(232,62,140,0.5);">🏷️ SỬA BẰNG MÃ Y TẾ</button>
+                            <button id="btn_hd_sua_ma_themmoi" title="Xem hướng dẫn chức năng này" style="background: #ffc107; color: #333; border: 1px solid #ffb300; padding: 0 12px; font-weight: bold; cursor: pointer; border-radius: 4px; font-size: 14px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">❓</button>
+                        </div>
                         
                         <button id="btn_auto_fill_transfer_themmoi" style="width: 100%; background: #fd7e14; color: white; border: none; padding: 8px; font-weight: bold; cursor: pointer; border-radius: 4px; font-size: 12px; display: none; margin-top: 6px; box-shadow: 0 0 8px rgba(253,126,20,0.5);">🏡 TỰ ĐIỀN CHUYỂN ĐỊA BÀN</button>
                     </div>
@@ -248,8 +246,8 @@
             applyCompactMode();
         });
 
-        // HÀM DÙNG CHUNG ĐỂ HIỂN THỊ ẢNH HƯỚNG DẪN 
-        function showGuideModal(imageUrl) {
+        // SỰ KIỆN HIỂN THỊ ẢNH HƯỚNG DẪN KHI BẤM NÚT
+        safeAddListener('btn_huong_dan', 'click', () => {
             let modal = document.getElementById('hssk_guide_modal');
             if (!modal) {
                 modal = document.createElement('div');
@@ -263,25 +261,14 @@
                 modal.innerHTML = `
                     <div style="position: relative; max-width: 90%; max-height: 90%; text-align: center;">
                         <button style="position: absolute; top: -15px; right: -15px; background: #dc3545; color: white; border: 2px solid white; border-radius: 50%; width: 32px; height: 32px; font-weight: bold; cursor: pointer; font-size: 16px;">X</button>
-                        <img id="hssk_guide_img" src="" style="max-width: 100%; max-height: 90vh; border-radius: 8px; box-shadow: 0 5px 25px rgba(0,0,0,0.5);">
+                        <img src="https://files.catbox.moe/5905g1.jpg" style="max-width: 100%; max-height: 90vh; border-radius: 8px; box-shadow: 0 5px 25px rgba(0,0,0,0.5);">
                     </div>
                 `;
                 document.body.appendChild(modal);
                 modal.onclick = () => modal.style.display = 'none';
+            } else {
+                modal.style.display = 'flex';
             }
-            // Gán link ảnh mới và hiển thị
-            document.getElementById('hssk_guide_img').src = imageUrl;
-            modal.style.display = 'flex';
-        }
-
-        // SỰ KIỆN HIỂN THỊ ẢNH HƯỚNG DẪN CHUẨN HÓA
-        safeAddListener('btn_huong_dan', 'click', () => {
-            showGuideModal('https://files.catbox.moe/5905g1.jpg');
-        });
-
-        // SỰ KIỆN HIỂN THỊ ẢNH HƯỚNG DẪN THÊM MỚI
-        safeAddListener('btn_huong_dan_themmoi', 'click', () => {
-            showGuideModal('https://files.catbox.moe/o7zstu.jpg');
         });
 
         const header = document.getElementById('hssk_drag_header');
@@ -366,61 +353,129 @@
             processNextPerson();
         });
 
-        safeAddListener('btn_approve', 'click', async () => {
-            updateStatus("⏳ Đang lưu dữ liệu...");
+        // --- HÀM XỬ LÝ CHUNG KHI BẤM LƯU CHUẨN HÓA (TỪ BOT HOẶC TỪ WEB) ---
+        async function handleApproveChuanHoa(isNativeClicked = false) {
+            updateStatus(isNativeClicked ? "⏳ Phát hiện bấm Lưu trên web. Đang theo dõi..." : "⏳ Đang lưu dữ liệu...");
             setButtonsDisabled(true);
-            const saveBtn = findButtonByText('Lưu');
-            if (saveBtn) {
-                saveBtn.click();
-                await sleep(300);
-                let waitSave = 0;
-                while (isWebLoading() && waitSave < 10000) { await sleep(300); waitSave += 300; }
-                await sleep(500); 
-                
-                if (isDuplicatePopupVisible()) {
-                    updateStatus("⚠️ Hệ thống báo TRÙNG LẶP. Bot đang tạm dừng!");
-                    document.getElementById('btn_approve').style.display = 'none';
-                    document.getElementById('btn_continue_after_popup').style.display = 'block';
-                    setButtonsDisabled(false); 
-                    return; 
-                }
-
-                if (document.querySelector('.mat-error') || document.querySelector('.invalid-feedback')) {
-                    updateStatus("⚠️ Web báo lỗi (Thiếu thông tin)! Hãy xử lý tay rồi bấm Duyệt lại.");
-                    setButtonsDisabled(false); 
-                    return; 
-                }
-
-                let isSuccess = false;
-                for (let i = 0; i < 15; i++) { 
-                    const toastContainer = document.getElementById('toast-container') || document.querySelector('.overlay-container') || document.body;
-                    if (toastContainer && (toastContainer.innerText.toLowerCase().includes('cập nhật thành công') || toastContainer.innerText.toLowerCase().includes('lưu thành công'))) {
-                        isSuccess = true;
-                        break;
-                    }
-                    await sleep(300);
-                }
-
-                if (!isSuccess) {
-                    updateStatus("⚠️ Không thấy thông báo Lưu thành công! Bot tạm dừng để bạn kiểm tra.");
+            
+            if (!isNativeClicked) {
+                const saveBtn = findButtonByText('Lưu');
+                if (saveBtn) {
+                    saveBtn.click();
+                } else {
+                    alert("❌ Không tìm thấy nút Lưu!");
                     setButtonsDisabled(false);
-                    return; 
+                    return;
                 }
+            }
 
+            await sleep(500); // Đợi 1 chút để bắt đầu kích hoạt Loading
+            let waitSave = 0;
+            while (isWebLoading() && waitSave < 15000) { await sleep(300); waitSave += 300; }
+            await sleep(500); 
+            
+            // --- BỘ QUÉT TỔNG HỢP (QUÉT CÙNG LÚC 3 TRẠNG THÁI) ---
+            let isSuccess = false;
+            let isDuplicate = false;
+            let hasError = false;
+
+            for (let i = 0; i < 30; i++) { // Quét liên tục trong 9 giây
+                // 1. Quét tìm Popup trùng
+                if (isDuplicatePopupVisible()) {
+                    isDuplicate = true; break;
+                }
+                // 2. Quét tìm Form báo lỗi đỏ
+                if (document.querySelector('.mat-error') || document.querySelector('.invalid-feedback')) {
+                    hasError = true; break;
+                }
+                // 3. Quét tìm Toast thông báo thành công
+                const toasts = document.querySelectorAll('.toast-message, .cdk-overlay-container, #toast-container, .snack-bar-container, .ngx-toastr');
+                for (let toast of toasts) {
+                    if (toast && toast.offsetParent !== null) {
+                        const text = toast.innerText.toLowerCase();
+                        if (text.includes('thành công') || text.includes('cập nhật') || text.includes('lưu') || text.includes('thêm mới')) {
+                            isSuccess = true; break;
+                        }
+                    }
+                }
+                if(isSuccess) break;
+                
+                await sleep(300); // Chờ 0.3s rồi quét lại vòng tiếp theo
+            }
+
+            // --- XỬ LÝ DỰA TRÊN KẾT QUẢ QUÉT TÌM ĐƯỢC ---
+            if (isDuplicate) {
+                updateStatus("⚠️ Hệ thống báo TRÙNG LẶP. Bot đang tạm dừng!");
+                document.getElementById('btn_approve').style.display = 'none';
+                document.getElementById('btn_continue_after_popup').style.display = 'block';
+                setButtonsDisabled(false); 
+                return; 
+            } else if (hasError) {
+                updateStatus("⚠️ Web báo lỗi (Thiếu thông tin)! Hãy xử lý tay rồi bấm Duyệt lại.");
+                setButtonsDisabled(false); 
+                return; 
+            } else if (isSuccess) {
                 const backBtn = findButtonByText('Quay lại');
                 if (backBtn) { backBtn.setAttribute('type', 'button'); backBtn.click(); }
                 await sleep(300);
                 let waitBack = 0;
                 while (isWebLoading() && waitBack < 10000) { await sleep(300); waitBack += 300; }
+                
+                window.hsskBotQueue.shift();
+                updateUI();
+                processNextPerson();
             } else {
-                alert("❌ Không tìm thấy nút Lưu!");
+                updateStatus("⚠️ Không thấy phản hồi từ hệ thống! Bot tạm dừng để bạn kiểm tra.");
                 setButtonsDisabled(false);
-                return;
+                return; 
             }
-            window.hsskBotQueue.shift();
-            updateUI();
-            processNextPerson();
+        }
+
+        safeAddListener('btn_approve', 'click', () => {
+            handleApproveChuanHoa(false);
         });
+
+        // --- BẮT SỰ KIỆN KHI BẤM NÚT "LƯU" CỦA CHÍNH TRANG WEB ---
+        if (!window.hsskGlobalSaveListenerAdded) {
+            document.body.addEventListener('click', (e) => {
+                let target = e.target;
+                let clickedSave = false;
+                
+                // Truy ngược DOM để tìm xem có phải bấm vào nút Lưu không (vì đôi khi click dính vào thẻ <span> bên trong nút)
+                while (target && target !== document.body) {
+                    if ((target.tagName === 'BUTTON' || target.tagName === 'APP-BASE-BUTTON') && target.innerText.trim() === 'Lưu') {
+                        clickedSave = true;
+                        break;
+                    }
+                    target = target.parentElement;
+                }
+
+                if (clickedSave) {
+                    // Xử lý click Lưu cho tab Chuẩn Hóa
+                    if (window.currentTab === 'chuanhoa' && window.hsskBotQueue && window.hsskBotQueue.length > 0) {
+                        const btnApprove = document.getElementById('btn_approve');
+                        if (btnApprove && btnApprove.style.display === 'block' && !btnApprove.disabled) {
+                            handleApproveChuanHoa(true);
+                        }
+                    }
+                    // Xử lý click Lưu cho tab Ghép Hộ
+                    if (window.currentTab === 'ghepho' && window.ghephoQueue && window.ghephoQueue.length > 0) {
+                        const btnApproveGhepHo = document.getElementById('btn_approve_ghepho');
+                        if (btnApproveGhepHo && btnApproveGhepHo.style.display === 'block' && !btnApproveGhepHo.disabled) {
+                            handleApproveGhepHo(true);
+                        }
+                    }
+                    // Xử lý click Lưu cho tab Thêm Mới
+                    if (window.currentTab === 'themmoi' && window.themMoiQueue && window.themMoiQueue.length > 0) {
+                        const btnApproveThemMoi = document.getElementById('btn_approve_themmoi');
+                        if (btnApproveThemMoi && btnApproveThemMoi.style.display === 'block' && !btnApproveThemMoi.disabled) {
+                            handleApproveThemMoi(true);
+                        }
+                    }
+                }
+            }, true); // Sử dụng capture phase (true) để tóm được event trước khi framework Angular nuốt mất sự kiện.
+            window.hsskGlobalSaveListenerAdded = true;
+        }
 
         safeAddListener('btn_continue_after_popup', 'click', async () => {
             updateStatus("⏳ Đang dọn dẹp form và sang người mới...");
@@ -685,41 +740,54 @@
             }
         });
 
-        safeAddListener('btn_approve_ghepho', 'click', async () => {
+        // --- HÀM XỬ LÝ CHUNG KHI BẤM LƯU GHÉP HỘ (TỪ BOT HOẶC TỪ WEB) ---
+        async function handleApproveGhepHo(isNativeClicked = false) {
             let statusEl = document.getElementById('ghepho_status');
-            statusEl.innerHTML = "⏳ Đang lưu dữ liệu Hộ Khẩu...";
+            statusEl.innerHTML = isNativeClicked ? "⏳ Phát hiện bấm Lưu trên web. Đang theo dõi..." : "⏳ Đang lưu dữ liệu Hộ Khẩu...";
             setButtonsDisabledGhepho(true);
             
-            const saveBtn = findButtonByText('Lưu');
-            if (saveBtn) {
-                saveBtn.click();
-                await sleep(300);
-                let waitSave = 0;
-                while (isWebLoading() && waitSave < 10000) { await sleep(300); waitSave += 300; }
-                await sleep(500); 
-                
-                if (document.querySelector('.mat-error') || document.querySelector('.invalid-feedback')) {
-                    statusEl.innerHTML = `<span style="color: red;">⚠️ Form báo lỗi (Thiếu trường bắt buộc)! Hãy điền tay rồi bấm Lưu.</span>`;
-                    setButtonsDisabledGhepho(false); 
-                    return; 
-                }
-
-                let isSuccess = false;
-                for (let i = 0; i < 15; i++) {
-                    const toastContainer = document.getElementById('toast-container') || document.querySelector('.overlay-container') || document.body;
-                    if (toastContainer && (toastContainer.innerText.toLowerCase().includes('thành công') || toastContainer.innerText.toLowerCase().includes('lưu'))) {
-                        isSuccess = true;
-                        break;
-                    }
-                    await sleep(300);
-                }
-
-                if (!isSuccess) {
-                    statusEl.innerHTML = `<span style="color: red;">⚠️ Không thấy thông báo Thành công! Bot tạm dừng kiểm tra.</span>`;
+            if (!isNativeClicked) {
+                const saveBtn = findButtonByText('Lưu');
+                if (saveBtn) {
+                    saveBtn.click();
+                } else {
+                    alert("❌ Không tìm thấy nút Lưu!");
                     setButtonsDisabledGhepho(false);
-                    return; 
+                    return;
                 }
+            }
 
+            await sleep(500);
+            let waitSave = 0;
+            while (isWebLoading() && waitSave < 15000) { await sleep(300); waitSave += 300; }
+            await sleep(500); 
+            
+            // --- BỘ QUÉT TỔNG HỢP (GHÉP HỘ KHÔNG CÓ POPUP TRÙNG) ---
+            let isSuccess = false;
+            let hasError = false;
+
+            for (let i = 0; i < 30; i++) { 
+                if (document.querySelector('.mat-error') || document.querySelector('.invalid-feedback')) {
+                    hasError = true; break;
+                }
+                const toasts = document.querySelectorAll('.toast-message, .cdk-overlay-container, #toast-container, .snack-bar-container, .ngx-toastr');
+                for (let toast of toasts) {
+                    if (toast && toast.offsetParent !== null) {
+                        const text = toast.innerText.toLowerCase();
+                        if (text.includes('thành công') || text.includes('cập nhật') || text.includes('lưu')) {
+                            isSuccess = true; break;
+                        }
+                    }
+                }
+                if(isSuccess) break;
+                await sleep(300);
+            }
+
+            if (hasError) {
+                statusEl.innerHTML = `<span style="color: red;">⚠️ Form báo lỗi (Thiếu trường bắt buộc)! Hãy điền tay rồi bấm Lưu.</span>`;
+                setButtonsDisabledGhepho(false); 
+                return; 
+            } else if (isSuccess) {
                 const backBtn = findButtonByText('Quay lại');
                 if (backBtn && backBtn.offsetParent !== null) {
                     backBtn.setAttribute('type', 'button'); 
@@ -728,15 +796,18 @@
                     let waitBack = 0;
                     while (isWebLoading() && waitBack < 10000) { await sleep(300); waitBack += 300; }
                 }
-
                 window.ghephoQueue.shift();
                 updateUIGhepho();
                 processNextGhephoFamily();
-
             } else {
-                alert("❌ Không tìm thấy nút Lưu!");
+                statusEl.innerHTML = `<span style="color: red;">⚠️ Không thấy phản hồi từ hệ thống! Bot tạm dừng kiểm tra.</span>`;
                 setButtonsDisabledGhepho(false);
+                return; 
             }
+        }
+
+        safeAddListener('btn_approve_ghepho', 'click', () => {
+            handleApproveGhepHo(false);
         });
 
         safeAddListener('btn_skip_ghepho', 'click', async () => {
@@ -806,117 +877,160 @@
             }
         });
 
-        safeAddListener('btn_approve_themmoi', 'click', async () => {
+        // --- HÀM XỬ LÝ CHUNG KHI BẤM LƯU THÊM MỚI (TỪ BOT HOẶC TỪ WEB) ---
+        async function handleApproveThemMoi(isNativeClicked = false) {
             let statusEl = document.getElementById('themmoi_status');
-            statusEl.innerHTML = "⏳ Đang lưu dữ liệu...";
+            statusEl.innerHTML = isNativeClicked ? "⏳ Phát hiện bấm Lưu trên web. Đang theo dõi..." : "⏳ Đang lưu dữ liệu...";
             setButtonsDisabledThemMoi(true);
             
-            const saveBtn = findButtonByText('Lưu');
-            if (saveBtn) {
-                saveBtn.click();
-                await sleep(300);
-                let waitSave = 0;
-                while (isWebLoading() && waitSave < 10000) { await sleep(300); waitSave += 300; }
-                await sleep(500); 
-                
+            if (!isNativeClicked) {
+                const saveBtn = findButtonByText('Lưu');
+                if (saveBtn) {
+                    saveBtn.click();
+                } else {
+                    alert("❌ Không tìm thấy nút Lưu!");
+                    setButtonsDisabledThemMoi(false);
+                    return;
+                }
+            }
+
+            await sleep(500); // Đợi để Loading xuất hiện
+            let waitSave = 0;
+            while (isWebLoading() && waitSave < 15000) { await sleep(300); waitSave += 300; }
+            await sleep(500); 
+            
+            // --- BỘ QUÉT TỔNG HỢP: TÌM POPUP TRÙNG, TÌM LỖI, VÀ TÌM THÔNG BÁO THÀNH CÔNG CÙNG LÚC ---
+            let isSuccess = false;
+            let isDuplicate = false;
+            let hasError = false;
+            let activeDialog = null;
+
+            for (let i = 0; i < 30; i++) { // Quét liên tục trong 9 giây
+                // 1. Quét tìm Popup trùng
                 const dialog = document.querySelector('mat-dialog-container');
-                const isDuplicate = dialog && (dialog.innerText.includes('nhân khẩu trùng') || dialog.innerText.includes('Xác nhận lưu'));
+                if (dialog && (dialog.innerText.toLowerCase().includes('nhân khẩu trùng') || dialog.innerText.toLowerCase().includes('xác nhận lưu'))) {
+                    isDuplicate = true;
+                    activeDialog = dialog;
+                    break;
+                }
 
-                if (isDuplicate) {
-                    const person = window.themMoiQueue[0];
-                    const matchResult = await handleDuplicatePopup(person, dialog);
+                // 2. Quét tìm Form báo lỗi đỏ
+                if (document.querySelector('.mat-error') || document.querySelector('.invalid-feedback')) {
+                    hasError = true;
+                    break;
+                }
+
+                // 3. Quét tìm Toast thông báo thành công
+                const toasts = document.querySelectorAll('.toast-message, .cdk-overlay-container, #toast-container, .snack-bar-container, .ngx-toastr');
+                for (let toast of toasts) {
+                    if (toast && toast.offsetParent !== null) {
+                        const text = toast.innerText.toLowerCase();
+                        if (text.includes('thành công') || text.includes('cập nhật') || text.includes('lưu') || text.includes('thêm mới')) {
+                            isSuccess = true;
+                            break;
+                        }
+                    }
+                }
+                if(isSuccess) break;
+
+                await sleep(300);
+            }
+
+            // --- XỬ LÝ KẾT QUẢ SAU KHI QUÉT ---
+            if (isDuplicate) {
+                const person = window.themMoiQueue[0];
+                const matchResult = await handleDuplicatePopup(person, activeDialog);
+                
+                if (matchResult && matchResult.handled) {
+                    statusEl.innerHTML = `<span style="color: #28a745;">✅ Trùng khớp! Đang chuyển sang trang tra cứu...</span>`;
+                    await sleep(1000);
+                    let waitLoad = 0;
+                    while (isWebLoading() && waitLoad < 10000) { await sleep(300); waitLoad += 300; }
                     
-                    if (matchResult && matchResult.handled) {
-                        statusEl.innerHTML = `<span style="color: #28a745;">✅ Trùng khớp! Đang chuyển sang trang tra cứu...</span>`;
-                        await sleep(1000);
-                        let waitLoad = 0;
+                    await switchToTab('Tra cứu nhân khẩu', '/dan-so/tra-cuu-nhan-khau');
+
+                    let medicalId = ""; 
+                    const searchBtn = findButtonByText('Tìm kiếm');
+                    if (searchBtn) {
+                        statusEl.innerHTML = `🔄 Đang bấm Tìm kiếm...`;
+                        searchBtn.click();
+                        await sleep(500);
+                        waitLoad = 0;
                         while (isWebLoading() && waitLoad < 10000) { await sleep(300); waitLoad += 300; }
-                        
-                        await switchToTab('Tra cứu nhân khẩu', '/dan-so/tra-cuu-nhan-khau');
+                        await sleep(1000);
 
-                        let medicalId = ""; 
-                        const searchBtn = findButtonByText('Tìm kiếm');
-                        if (searchBtn) {
-                            statusEl.innerHTML = `🔄 Đang bấm Tìm kiếm...`;
-                            searchBtn.click();
-                            await sleep(500);
-                            waitLoad = 0;
-                            while (isWebLoading() && waitLoad < 10000) { await sleep(300); waitLoad += 300; }
-                            await sleep(1000);
+                        const firstRow = document.querySelector('tbody tr');
+                        if (firstRow && !firstRow.innerText.toLowerCase().includes('không')) {
+                            const tds = firstRow.querySelectorAll('td');
+                            if (tds.length >= 2) {
+                                medicalId = tds[1].innerText.trim();
+                                window.lastCollectedMedicalId = medicalId; 
+                            }
 
-                            const firstRow = document.querySelector('tbody tr');
-                            if (firstRow && !firstRow.innerText.toLowerCase().includes('không')) {
-                                const tds = firstRow.querySelectorAll('td');
-                                if (tds.length >= 2) {
-                                    medicalId = tds[1].innerText.trim();
-                                    window.lastCollectedMedicalId = medicalId; 
-                                }
+                            const actionBtns = firstRow.querySelectorAll('td:last-child button');
+                            if (actionBtns.length > 0) {
+                                statusEl.innerHTML = `🔄 Đang mở form Chuyển nhân khẩu...`;
+                                actionBtns[0].click(); 
+                                await sleep(1500);
+                                waitLoad = 0;
+                                while (isWebLoading() && waitLoad < 10000) { await sleep(300); waitLoad += 300; }
 
-                                const actionBtns = firstRow.querySelectorAll('td:last-child button');
-                                if (actionBtns.length > 0) {
-                                    statusEl.innerHTML = `🔄 Đang mở form Chuyển nhân khẩu...`;
-                                    actionBtns[0].click(); 
-                                    await sleep(1500);
+                                const transferDialog = document.querySelector('mat-dialog-container');
+                                if (transferDialog && transferDialog.innerText.includes('Chuyển nhân khẩu về địa bàn')) {
+                                    statusEl.innerHTML = `✍️ Đang tự động điền form Chuyển địa bàn...`;
+                                    
+                                    let tinhToFill = person.parsedAddress?.tinh || 'Thành phố Hà Nội';
+                                    let xaToFill = person.parsedAddress?.xa || window.textDienNhanhXa;
+                                    let thonToFill = person.parsedAddress?.thon || window.textDienNhanhThon;
+                                    let thonToSearch = cleanThonXom(thonToFill);
+                                    let diaChiChiTiet = person.parsedAddress?.full || `Thôn ${thonToFill}, ${xaToFill}, ${tinhToFill}`;
+
+                                    const dialogSelects = transferDialog.querySelectorAll('ng-select');
+                                    if (dialogSelects.length >= 3) {
+                                        await selectNgOption(dialogSelects[0], tinhToFill);
+                                        await selectNgOption(dialogSelects[1], xaToFill);
+                                        if (thonToSearch) await selectNgOption(dialogSelects[2], thonToSearch);
+                                    }
+
+                                    const addressInput = transferDialog.querySelector('input[formcontrolname="currentAddress"]');
+                                    if (addressInput) {
+                                        addressInput.focus();
+                                        addressInput.value = diaChiChiTiet;
+                                        addressInput.dispatchEvent(new Event('input', { bubbles: true }));
+                                        addressInput.dispatchEvent(new Event('change', { bubbles: true }));
+                                        addressInput.dispatchEvent(new Event('blur', { bubbles: true }));
+                                    }
+
+                                    const radios = transferDialog.querySelectorAll('label.container-radio');
+                                    for(let r of radios) {
+                                        if(r.innerText.includes('Đã chuẩn hóa')) {
+                                            const input = r.querySelector('input');
+                                            if(input && !input.checked) {
+                                                const checkmark = r.querySelector('.checkmark-radio');
+                                                if(checkmark) checkmark.click(); else input.click();
+                                            }
+                                            break;
+                                        }
+                                    }
+
+                                    const dateInput = transferDialog.querySelector('input[bsdatepicker], input.cus-datepicker');
+                                    if (dateInput) {
+                                        dateInput.focus();
+                                        dateInput.value = getTodayString();
+                                        dateInput.dispatchEvent(new Event('input', { bubbles: true }));
+                                        dateInput.dispatchEvent(new Event('change', { bubbles: true }));
+                                        dateInput.dispatchEvent(new Event('blur', { bubbles: true }));
+                                    }
+
+                                    statusEl.innerHTML = `🛑 ĐÃ ĐIỀN XONG CHUYỂN ĐỊA BÀN. <b style="color: #ff9800; font-size: 13px;">HÃY TỰ BẤM [XÁC NHẬN] TRÊN MÀN HÌNH!</b>`;
+                                    
+                                    while (document.querySelector('mat-dialog-container')) {
+                                        if (!window.isThemMoiRunning) return; 
+                                        await sleep(500);
+                                    }
+
                                     waitLoad = 0;
                                     while (isWebLoading() && waitLoad < 10000) { await sleep(300); waitLoad += 300; }
-
-                                    const transferDialog = document.querySelector('mat-dialog-container');
-                                    if (transferDialog && transferDialog.innerText.includes('Chuyển nhân khẩu về địa bàn')) {
-                                        statusEl.innerHTML = `✍️ Đang tự động điền form Chuyển địa bàn...`;
-                                        
-                                        let tinhToFill = person.parsedAddress?.tinh || 'Thành phố Hà Nội';
-                                        let xaToFill = person.parsedAddress?.xa || window.textDienNhanhXa;
-                                        let thonToFill = person.parsedAddress?.thon || window.textDienNhanhThon;
-                                        let thonToSearch = cleanThonXom(thonToFill);
-                                        let diaChiChiTiet = person.parsedAddress?.full || `Thôn ${thonToFill}, ${xaToFill}, ${tinhToFill}`;
-
-                                        const dialogSelects = transferDialog.querySelectorAll('ng-select');
-                                        if (dialogSelects.length >= 3) {
-                                            await selectNgOption(dialogSelects[0], tinhToFill);
-                                            await selectNgOption(dialogSelects[1], xaToFill);
-                                            if (thonToSearch) await selectNgOption(dialogSelects[2], thonToSearch);
-                                        }
-
-                                        const addressInput = transferDialog.querySelector('input[formcontrolname="currentAddress"]');
-                                        if (addressInput) {
-                                            addressInput.focus();
-                                            addressInput.value = diaChiChiTiet;
-                                            addressInput.dispatchEvent(new Event('input', { bubbles: true }));
-                                            addressInput.dispatchEvent(new Event('change', { bubbles: true }));
-                                            addressInput.dispatchEvent(new Event('blur', { bubbles: true }));
-                                        }
-
-                                        const radios = transferDialog.querySelectorAll('label.container-radio');
-                                        for(let r of radios) {
-                                            if(r.innerText.includes('Đã chuẩn hóa')) {
-                                                const input = r.querySelector('input');
-                                                if(input && !input.checked) {
-                                                    const checkmark = r.querySelector('.checkmark-radio');
-                                                    if(checkmark) checkmark.click(); else input.click();
-                                                }
-                                                break;
-                                            }
-                                        }
-
-                                        const dateInput = transferDialog.querySelector('input[bsdatepicker], input.cus-datepicker');
-                                        if (dateInput) {
-                                            dateInput.focus();
-                                            dateInput.value = getTodayString();
-                                            dateInput.dispatchEvent(new Event('input', { bubbles: true }));
-                                            dateInput.dispatchEvent(new Event('change', { bubbles: true }));
-                                            dateInput.dispatchEvent(new Event('blur', { bubbles: true }));
-                                        }
-
-                                        statusEl.innerHTML = `🛑 ĐÃ ĐIỀN XONG CHUYỂN ĐỊA BÀN. <b style="color: #ff9800; font-size: 13px;">HÃY TỰ BẤM [XÁC NHẬN] TRÊN MÀN HÌNH!</b>`;
-                                        
-                                        while (document.querySelector('mat-dialog-container')) {
-                                            if (!window.isThemMoiRunning) return; 
-                                            await sleep(500);
-                                        }
-
-                                        waitLoad = 0;
-                                        while (isWebLoading() && waitLoad < 10000) { await sleep(300); waitLoad += 300; }
-                                    }
                                 }
                             }
                         }
@@ -941,42 +1055,24 @@
                         updateUIThemMoi();
                         processNextThemMoi(); 
                         return;
-
-                    } else {
-                        statusEl.innerHTML = `<span style="color: red;">⚠️ ${matchResult.reason}. Hãy tự quyết định!</span>`;
-                        setButtonsDisabledThemMoi(false); 
-                        
-                        const btnStop = document.getElementById('btn_stop_themmoi');
-                        window.isThemMoiRunning = false;
-                        btnStop.innerHTML = '▶️ TIẾP TỤC (BỎ QUA SỬA)';
-                        btnStop.style.background = '#17a2b8';
-                        setCompactModeUI(false);
-                        return; 
-                    }
-                } else if (document.querySelector('.mat-error') || document.querySelector('.invalid-feedback')) {
-                    statusEl.innerHTML = `<span style="color: red;">⚠️ Web báo lỗi (Thiếu thông tin)! Hãy xử lý tay rồi bấm Lưu.</span>`;
+                    } // <-- FIX LỖI: CẶP NGOẶC BỊ THIẾU Ở ĐÂY ĐÃ ĐƯỢC THÊM VÀO
+                } else {
+                    statusEl.innerHTML = `<span style="color: red;">⚠️ ${matchResult.reason}. Hãy tự quyết định!</span>`;
                     setButtonsDisabledThemMoi(false); 
+                    
+                    const btnStop = document.getElementById('btn_stop_themmoi');
+                    window.isThemMoiRunning = false;
+                    btnStop.innerHTML = '▶️ TIẾP TỤC (BỎ QUA SỬA)';
+                    btnStop.style.background = '#17a2b8';
                     setCompactModeUI(false);
                     return; 
                 }
-
-                let isSuccess = false;
-                for (let i = 0; i < 15; i++) {
-                    const toastContainer = document.getElementById('toast-container') || document.querySelector('.overlay-container') || document.body;
-                    if (toastContainer && (toastContainer.innerText.toLowerCase().includes('cập nhật thành công') || toastContainer.innerText.toLowerCase().includes('lưu thành công') || toastContainer.innerText.toLowerCase().includes('thêm mới thành công') || toastContainer.innerText.toLowerCase().includes('thành công'))) {
-                        isSuccess = true;
-                        break;
-                    }
-                    await sleep(300);
-                }
-
-                if (!isSuccess) {
-                    statusEl.innerHTML = `<span style="color: red;">⚠️ Không thấy thông báo Lưu thành công! Bot tạm dừng để bạn kiểm tra.</span>`;
-                    setButtonsDisabledThemMoi(false);
-                    setCompactModeUI(false);
-                    return; 
-                }
-
+            } else if (hasError) {
+                statusEl.innerHTML = `<span style="color: red;">⚠️ Web báo lỗi (Thiếu thông tin)! Hãy xử lý tay rồi bấm Lưu.</span>`;
+                setButtonsDisabledThemMoi(false); 
+                setCompactModeUI(false);
+                return; 
+            } else if (isSuccess) {
                 setCompactModeUI(true);
                 const backBtn = findButtonByText('Quay lại');
                 if (backBtn && backBtn.offsetParent !== null) {
@@ -992,15 +1088,20 @@
                 processNextThemMoi();
 
             } else {
-                alert("❌ Không tìm thấy nút Lưu!");
+                statusEl.innerHTML = `<span style="color: red;">⚠️ Không thấy phản hồi từ hệ thống! Bot tạm dừng để bạn kiểm tra.</span>`;
                 setButtonsDisabledThemMoi(false);
+                setCompactModeUI(false);
             }
+        }
+
+        safeAddListener('btn_approve_themmoi', 'click', () => {
+            handleApproveThemMoi(false);
         });
 
         safeAddListener('btn_skip_themmoi', 'click', async () => {
             if (window.themMoiQueue.length === 0) return;
             const skipBtn = document.getElementById('btn_skip_themmoi');
-            skipBtn.disabled = true; // Chống spam click
+            skipBtn.disabled = true; 
             
             window.currentThemMoiId = Math.random(); 
             
@@ -1017,7 +1118,7 @@
             
             window.themMoiQueue.shift();
             updateUIThemMoi();
-            skipBtn.disabled = false; // Mở khóa
+            skipBtn.disabled = false; 
             processNextThemMoi();
         });
 
@@ -1326,7 +1427,6 @@
         applyCompactMode();
     }
 
-    // Gắn vòng lặp vào biến toàn cục để đoạn code "Thanh trừng" ở trên có thể tìm thấy và xóa
     window.hsskBotInterval = setInterval(() => {
         if (!document.querySelector('.app-loading')) {
             createBotPanel();
@@ -1965,14 +2065,30 @@
         return `${String(p1).padStart(2,'0')}/${String(p2).padStart(2,'0')}/${p3}`;
     }
 
+    // TỐI ƯU HOÁ CHỨC NĂNG PHÂN TÍCH ĐỊA CHỈ
     function parseAddressString(fullAddress) {
         let result = { tinh: '', xa: '', thon: '', full: fullAddress };
         if (!fullAddress) return result;
+        
         let parts = fullAddress.split(',').map(s => s.trim());
-        if (parts.length === 1 && fullAddress.includes('-')) parts = fullAddress.split('-').map(s => s.trim());
+        if (parts.length === 1 && fullAddress.includes('-')) {
+            parts = fullAddress.split('-').map(s => s.trim());
+        }
+        
         if (parts.length >= 3) {
-            result.tinh = parts[parts.length - 1]; result.xa = parts[parts.length - 2]; result.thon = parts.slice(0, parts.length - 2).join(', ');
-        } else if (parts.length === 2) { result.tinh = parts[1]; result.xa = parts[0]; }
+            result.tinh = parts[parts.length - 1]; 
+            result.xa = parts[parts.length - 2]; 
+            
+            // Cải tiến: Luôn lấy phần tử thứ 3 từ dưới lên làm Thôn/Xóm thay vì gom tất cả.
+            // Giải quyết triệt để lỗi khi người dùng nhập chuỗi 4 phần 
+            // VD: "Số nhà 5, Thôn Năm Trại, Xã Quốc Oai, TP Hà Nội" -> parts[1] là "Thôn Năm Trại"
+            result.thon = parts[parts.length - 3]; 
+            
+        } else if (parts.length === 2) { 
+            result.tinh = parts[1]; 
+            result.xa = parts[0]; 
+        }
+        
         return result;
     }
 
@@ -2199,18 +2315,6 @@
             }
         }
         return null;
-    }
-
-    function calculateAge(dobString) {
-        if (!dobString) return null;
-        const parts = dobString.split('/');
-        if (parts.length !== 3) return null;
-        const dob = new Date(parts[2], parts[1] - 1, parts[0]);
-        const today = new Date();
-        let age = today.getFullYear() - dob.getFullYear();
-        const m = today.getMonth() - dob.getMonth();
-        if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) age--;
-        return age;
     }
 
     function guessRelationship(head, member) {
